@@ -1,0 +1,25 @@
+graph TD
+    subgraph User
+        U[User Input]
+    end
+    subgraph API
+        A1[FastAPI Server]
+        A2[Validation Layer]
+        A3[Orchestration Endpoint]
+    end
+    subgraph Core
+        C1[Interpretation]
+        C2[Planning]
+        C3[Governance Gate]
+        C4[Dispatcher]
+        C5[Drivers]
+    end
+    subgraph DB
+        D1[(Database)]
+    end
+    U --> A1 --> A2 --> A3 --> C1 --> C2 --> C3 --> C4 --> C5
+    C1 --> D1
+    C2 --> D1
+    C3 --> D1
+    C4 --> D1
+    C5 --> D1

@@ -1,15 +1,63 @@
-from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks
-from fastapi.responses import StreamingResponse
+from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks, Request
+from fastapi.responses import StreamingResponse, JSONResponse
+def error_response(type_: str, message: str, status_code: int = 400):
+    return JSONResponse(
+        status_code=status_code,
+        content={
+            "error": {
+                "type": type_,
+                "message": message
+            }
+        }
+    )
+
+# Custom exception handler for HTTPException to standardize error format
+from fastapi.exception_handlers import http_exception_handler
+from fastapi.exceptions import RequestValidationError
+from fastapi.exception_handlers import request_validation_exception_handler
+
+app = FastAPI(title="OpsAI - System of Record", lifespan=lifespan)
+
+@app.exception_handler(HTTPException)
+async def custom_http_exception_handler(request: Request, exc: HTTPException):
+    detail = exc.detail if isinstance(exc.detail, str) else str(exc.detail)
+    return error_response("HTTPException", detail, status_code=exc.status_code)
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    return error_response("ValidationError", str(exc), status_code=422)
 from sqlmodel import Session
 from dotenv import load_dotenv
+from opsai.utils.log_config import configure_logging
 import json
 import asyncio
 
-# Load environment once at the entry point
 load_dotenv()
+configure_logging()
 from contextlib import asynccontextmanager
 from opsai.database import create_db_and_tables, get_session, engine
-from opsai.models import Orchestration, OrchestrationStatus
+from opsai.models import Orchestration, OrchestrationStatus, StepStatus, WorkflowInstance
+from fastapi.encoders import jsonable_encoder
+# --- Orchestration List Endpoint ---
+@app.get("/api/orchestrations")
+async def list_orchestrations(session: Session = Depends(get_session)):
+    orchestrations = session.exec(select(Orchestration)).all()
+    return jsonable_encoder(orchestrations)
+
+# --- Orchestration Detail & Step History Endpoint ---
+@app.get("/api/orchestrations/{orchestration_id}")
+async def orchestration_detail(orchestration_id: str, session: Session = Depends(get_session)):
+    orchestration = session.get(Orchestration, orchestration_id)
+    if not orchestration:
+        return error_response("NotFound", "Orchestration not found", status_code=404)
+    # Get workflow instance and step history
+    workflow = session.exec(select(WorkflowInstance).where(WorkflowInstance.orchestration_id == orchestration_id)).first()
+    steps = session.exec(select(StepStatus).where(StepStatus.orchestration_id == orchestration_id)).all()
+    return {
+        "orchestration": jsonable_encoder(orchestration),
+        "workflow": jsonable_encoder(workflow),
+        "steps": jsonable_encoder(steps)
+    }
 from opsai.core.orchestrator import Orchestrator
 from opsai.core.dispatcher import Dispatcher
 from opsai.core.validation import ValidationService
@@ -56,10 +104,10 @@ async def approve_orchestration(
 ):
     orchestration = session.get(Orchestration, orchestration_id)
     if not orchestration:
-        raise HTTPException(status_code=404, detail="Orchestration not found")
+        return error_response("NotFound", "Orchestration not found", status_code=404)
     
     if orchestration.status != OrchestrationStatus.PENDING_APPROVAL:
-        raise HTTPException(status_code=400, detail=f"Cannot approve orchestration in state {orchestration.status}")
+        return error_response("InvalidState", f"Cannot approve orchestration in state {orchestration.status}", status_code=400)
 
     # 1. Staleness Check (Re-run Validation)
     validator = ValidationService()
@@ -67,7 +115,7 @@ async def approve_orchestration(
         orchestration.status = OrchestrationStatus.FAILED
         session.add(orchestration)
         session.commit()
-        raise HTTPException(status_code=422, detail="Staleness check failed: Workflow is no longer valid.")
+        return error_response("StalenessCheckFailed", "Workflow is no longer valid.", status_code=422)
 
     # 2. Update Status
     orchestration.status = OrchestrationStatus.EXECUTING
@@ -87,10 +135,10 @@ async def reject_orchestration(
 ):
     orchestration = session.get(Orchestration, orchestration_id)
     if not orchestration:
-        raise HTTPException(status_code=404, detail="Orchestration not found")
+        return error_response("NotFound", "Orchestration not found", status_code=404)
     
     if orchestration.status != OrchestrationStatus.PENDING_APPROVAL:
-        raise HTTPException(status_code=400, detail="Only pending orchestrations can be rejected")
+        return error_response("InvalidState", "Only pending orchestrations can be rejected", status_code=400)
 
     orchestration.status = OrchestrationStatus.REJECTED
     session.add(orchestration)
@@ -105,7 +153,7 @@ async def stream_orchestration(
 ):
     orchestration = session.get(Orchestration, orchestration_id)
     if not orchestration:
-        raise HTTPException(status_code=404, detail="Orchestration not found")
+        return error_response("NotFound", "Orchestration not found", status_code=404)
 
     async def event_generator():
         try:

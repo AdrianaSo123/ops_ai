@@ -9,10 +9,10 @@ class LinearDriver(BaseDriver):
     Requires OPSAI_DRIVER_LINEAR_KEY and OPSAI_DRIVER_LINEAR_TEAM_ID.
     """
     
-    def __init__(self):
+    def __init__(self) -> None:
         self.api_url = "https://api.linear.app/graphql"
-        self.api_key = os.getenv("OPSAI_DRIVER_LINEAR_KEY")
-        self.team_key = os.getenv("OPSAI_DRIVER_LINEAR_TEAM_ID")
+        self.api_key: str | None = os.getenv("OPSAI_DRIVER_LINEAR_KEY")
+        self.team_key: str | None = os.getenv("OPSAI_DRIVER_LINEAR_TEAM_ID")
         self._cached_team_id = None # Internal UUID
 
     def check_health(self) -> bool:
@@ -23,7 +23,7 @@ class LinearDriver(BaseDriver):
             return False
             
         # Enhanced query to fetch the proper internal ID
-        query = """
+        query: str = """
         query {
           team(id: "%s") {
             id
@@ -33,8 +33,8 @@ class LinearDriver(BaseDriver):
         """ % self.team_key
         
         try:
-            with httpx.Client() as client:
-                response = client.post(
+            with httpx.Client() as client: httpx.Client:
+                response: httpx.Response = client.post(
                     self.api_url,
                     headers={"Authorization": self.api_key, "Content-Type": "application/json"},
                     json={"query": query},
@@ -80,15 +80,15 @@ class LinearDriver(BaseDriver):
           }
         }
         """
-        variables = {
+        variables: Dict[str, Any] = {
             "title": title,
             "description": description,
             "teamId": self._cached_team_id
         }
 
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient() as client: httpx.AsyncClient:
             try:
-                response = await client.post(
+                response: httpx.Response = await client.post(
                     self.api_url,
                     headers={"Authorization": self.api_key, "Content-Type": "application/json"},
                     json={"query": mutation, "variables": variables},
@@ -127,7 +127,7 @@ class LinearDriver(BaseDriver):
                 else:
                     return {"status": "FAILED", "is_recoverable": False, "error": "Linear issue creation failed"}
 
-            except httpx.RequestError as e:
+            except httpx.RequestError as e: httpx.RequestError:
                 return {"status": "FAILED", "is_recoverable": True, "error": f"Network Error: {str(e)}"}
 
     def sanitize(self, data: Dict[str, Any]) -> Dict[str, Any]:

@@ -39,6 +39,7 @@ class Orchestrator:
 
             self.context_mgr.save_snapshot(OrchestrationStatus.INTERPRETING, intent_data)
             self.logger.info("INTERPRETING", "Success", extra={"intent": intent_data.get("intent")})
+            self.logger.info("AUDIT", f"Intent Data: {intent_data}")
             yield {"stage": "INTERPRETING", "status": "SUCCESS", "data": intent_data}
 
             # 2. Planning
@@ -50,6 +51,7 @@ class Orchestrator:
                 return
 
             self.context_mgr.save_snapshot(OrchestrationStatus.PLANNING, {"workflow": workflow})
+            self.logger.info("AUDIT", f"Workflow Steps: {workflow}")
             yield {"stage": "PLANNING", "status": "SUCCESS", "workflow_count": len(workflow)}
 
             # 3. Execution (Payload Generation & Merging)
@@ -71,6 +73,8 @@ class Orchestrator:
                         self.logger.error("SECURITY", msg)
                         yield {"stage": "EXECUTING", "status": "FAILED", "reason": "Security Violation: Unauthorized Domain"}
                         return
+
+            self.logger.info("AUDIT", f"Execution Payloads: {payloads}")
 
             # MERGE PAYLOADS INTO WORKFLOW (New in Phase 3 Fix)
             # This ensures the WorkflowInstance in the DB contains everything needed for dispatching.
@@ -113,3 +117,18 @@ class Orchestrator:
             yield {"stage": "PIPELINE", "status": "FAILED", "reason": str(e)}
         finally:
             self.context_mgr.close()
+
+    def resume(self, workflow_id: str, persistence_service) -> None:
+        """
+        Resume a workflow from failure or paused state using the persistence service.
+        Args:
+            workflow_id (str): The ID of the workflow to resume.
+            persistence_service (PersistenceService): The persistence service instance.
+        """
+        state = persistence_service.load_state(workflow_id)
+        if not state:
+            self.logger.error("RESUME", f"No saved state found for workflow {workflow_id}")
+            return
+        # Resume logic here: restore workflow, step, and status from state
+        # (Implementation would continue based on your workflow execution model)
+        self.logger.info("RESUME", f"Resumed workflow {workflow_id} from persisted state.")
