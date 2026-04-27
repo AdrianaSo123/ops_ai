@@ -3,6 +3,9 @@ import json
 from typing import List, Dict, Any, Optional
 from openai import AsyncOpenAI
 from dotenv import load_dotenv
+
+from opsai.core.strategy_registry import DomainStrategy
+from openai.types.chat.chat_completion import ChatCompletion
 from .strategy_registry import StrategyRegistry
 
 load_dotenv()
@@ -35,8 +38,8 @@ Always return valid JSON. Do not include markdown formatting.
 """
 
 class PlanningService:
-    def __init__(self):
-        self.api_key = os.getenv("OPENAI_API_KEY")
+    def __init__(self) -> None:
+        self.api_key: str | None = os.getenv("OPENAI_API_KEY")
         if not self.api_key:
             raise ValueError("OPENAI_API_KEY not found in .env")
         self.client = AsyncOpenAI(api_key=self.api_key)
@@ -47,17 +50,17 @@ class PlanningService:
         Generates a multi-step workflow plan based on intent and context.
         """
         # Strategy Lookup
-        strategy = self.registry.get_strategy(intent)
+        strategy: DomainStrategy | None = self.registry.get_strategy(intent)
         
-        system_prompt = BASE_PLANNING_PROMPT
+        system_prompt: str = BASE_PLANNING_PROMPT
         if strategy:
             system_prompt += f"\n\nDOMAIN SPECIFIC LOGIC ({strategy.name}):\n{strategy.system_prompt}"
             system_prompt += f"\nCONSTRAINTS: {', '.join(strategy.constraints)}"
 
-        user_prompt = f"Intent: {intent}\nContext: {json.dumps(context)}"
+        user_prompt: str = f"Intent: {intent}\nContext: {json.dumps(context)}"
         
         try:
-            response = await self.client.chat.completions.create(
+            response: ChatCompletion = await self.client.chat.completions.create(
                 model="gpt-4o",
                 messages=[
                     {"role": "system", "content": system_prompt},
@@ -68,7 +71,7 @@ class PlanningService:
             
             result = json.loads(response.choices[0].message.content)
             return result.get("workflow", [])
-        except Exception as e:
+        except Exception as e: Exception:
             # Fallback strategy
             return [{
                 "step_id": "fallback_manual_review",

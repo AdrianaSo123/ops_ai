@@ -9,12 +9,12 @@ class EscalationHandler:
     """
     Handles escalation actions for workflow steps. Actions are injected for testability.
     """
-    def __init__(self, actions: Dict[str, Any]):
+    def __init__(self, actions: Dict[str, Any]) -> None:
         """
         Args:
             actions (dict): Mapping of action type to callable.
         """
-        self.actions = actions
+        self.actions: Dict[str, Any] = actions
 
     def escalate(self, escalation: Dict[str, Any], context: Dict[str, Any]) -> List[str]:
         """
@@ -28,7 +28,7 @@ class EscalationHandler:
         results = []
         for action in escalation.get("actions", []):
             action_type = action["type"]
-            handler = self.actions.get(action_type)
+            handler: Any | None = self.actions.get(action_type)
             if handler:
                 results.append(handler(context))
             else:

@@ -25,12 +25,12 @@ class DriverRegistry:
     Registry to manage and route StepTypes to concrete Driver implementations.
     Supports ENABLED toggles via environment variables.
     """
-    def __init__(self):
+    def __init__(self) -> None:
         self._drivers: Dict[str, Type[BaseDriver]] = {}
         # Default mock fallback
         self._mock_driver = MockDriver()
 
-    def register(self, step_type: str, driver_class: Type[BaseDriver]):
+    def register(self, step_type: str, driver_class: Type[BaseDriver]) -> None:
         self._drivers[step_type] = driver_class
 
     def get_driver(self, step_type: str, force_live: bool = False) -> BaseDriver:
@@ -38,11 +38,11 @@ class DriverRegistry:
         Retrieves a driver for the given StepType.
         If force_live is True, it will raise an error if the real driver is disabled.
         """
-        driver_class = self._drivers.get(step_type)
+        driver_class: BaseDriver | None = self._drivers.get(step_type)
         
         if driver_class:
             # check the ENV toggle, e.g., OPSAI_DRIVER_GMAIL_ENABLED
-            env_key = f"OPSAI_DRIVER_{step_type}_ENABLED"
+            env_key: str = f"OPSAI_DRIVER_{step_type}_ENABLED"
             if os.getenv(env_key, "false").lower() == "true":
                 return driver_class()
             
@@ -57,7 +57,7 @@ registry = DriverRegistry()
 registry.register("COMMUNICATION", GmailDriver)
 registry.register("TASK_CREATION", LinearDriver)
 
-def driver_startup_check():
+def driver_startup_check() -> None:
     """
     Utility to verify all enabled drivers are healthy on startup.
     Called by main.py.
@@ -75,14 +75,14 @@ def driver_startup_check():
         if driver_class in checked_drivers:
             continue
             
-        env_key = f"OPSAI_DRIVER_{step_type}_ENABLED"
-        is_enabled = os.getenv(env_key, "false").lower() == "true"
+        env_key: str = f"OPSAI_DRIVER_{step_type}_ENABLED"
+        is_enabled: bool = os.getenv(env_key, "false").lower() == "true"
         
         if is_enabled:
-            instance = driver_class()
-            is_healthy = instance.check_health()
-            status_icon = "✅" if is_healthy else "❌"
-            status_text = "HEALTHY" if is_healthy else "CONFIGURATION ERROR"
+            instance: BaseDriver = driver_class()
+            is_healthy: bool = instance.check_health()
+            status_icon: str = "✅" if is_healthy else "❌"
+            status_text: str = "HEALTHY" if is_healthy else "CONFIGURATION ERROR"
             print(f"   {status_icon} [{driver_class.__name__}]: {status_text}")
         else:
             print(f"   ⚪ [{driver_class.__name__}]: DISABLED (Mock Fallback Active)")

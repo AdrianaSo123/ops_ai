@@ -9,10 +9,10 @@ class BaseDriver(ABC):
     Each driver is responsible for taking a 'Planned Action' payload 
     and delivering it to a third-party service.
     """
-    def __init__(self, name: str):
-        self.name = name
-        self.logger = logging.getLogger(f"Driver-{name}")
-        self.api_key = self._get_required_env()
+    def __init__(self, name: str) -> None:
+        self.name: str = name
+        self.logger: logging.Logger = logging.getLogger(f"Driver-{name}")
+        self.api_key: str | None = self._get_required_env()
 
     @abstractmethod
     def _get_required_env(self) -> Optional[str]:

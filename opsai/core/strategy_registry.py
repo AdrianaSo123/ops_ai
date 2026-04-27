@@ -37,8 +37,8 @@ Include account creation, hardware ordering (Laptop/Monitor), and a security bri
 )
 
 class StrategyRegistry:
-    def __init__(self):
-        self._strategies = {
+    def __init__(self) -> None:
+        self._strategies: Dict[str, DomainStrategy] = {
             "CLIENT_ONBOARDING": ONBOARDING_STRATEGY,
             "SALES_OUTREACH": SALES_STRATEGY,
             "IT_PROVISIONING": IT_STRATEGY

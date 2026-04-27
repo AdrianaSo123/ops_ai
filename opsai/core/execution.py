@@ -3,6 +3,7 @@ import json
 from typing import List, Dict, Any, Optional
 from openai import AsyncOpenAI
 from dotenv import load_dotenv
+from openai.types.chat.chat_completion import ChatCompletion
 
 load_dotenv()
 
@@ -35,8 +36,8 @@ Always return valid JSON. Do not include markdown formatting.
 """
 
 class ExecutionService:
-    def __init__(self):
-        self.api_key = os.getenv("OPENAI_API_KEY")
+    def __init__(self) -> None:
+        self.api_key: str | None = os.getenv("OPENAI_API_KEY")
         if not self.api_key:
             raise ValueError("OPENAI_API_KEY not found in .env")
         self.client = AsyncOpenAI(api_key=self.api_key)
@@ -45,10 +46,10 @@ class ExecutionService:
         """
         Converts workflow steps into concrete payloads using context hydration.
         """
-        user_prompt = f"Workflow: {json.dumps(workflow)}\nContext: {json.dumps(context)}"
+        user_prompt: str = f"Workflow: {json.dumps(workflow)}\nContext: {json.dumps(context)}"
         
         try:
-            response = await self.client.chat.completions.create(
+            response: ChatCompletion = await self.client.chat.completions.create(
                 model="gpt-4o",
                 messages=[
                     {"role": "system", "content": EXECUTION_SYSTEM_PROMPT},
@@ -59,6 +60,6 @@ class ExecutionService:
             
             result = json.loads(response.choices[0].message.content)
             return result.get("payloads", [])
-        except Exception as e:
+        except Exception as e: Exception:
             # Fallback for execution failure
             return []

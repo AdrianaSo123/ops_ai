@@ -17,29 +17,29 @@ class Dispatcher:
     The Dispatcher is the 'heart' of Governed Execution. 
     It executes planned steps, manages retries, and maintains the granular state of the workflow.
     """
-    def __init__(self, orchestration_id: uuid.UUID, engine, registry):
-        self.orchestration_id = orchestration_id
+    def __init__(self, orchestration_id: uuid.UUID, engine, registry) -> None:
+        self.orchestration_id: uuid.UUID = orchestration_id
         self.engine = engine
         self.registry = registry
         self.context_mgr = ContextManager(orchestration_id, engine)
-        self.logger = logging.getLogger(f"Dispatcher-{orchestration_id}")
+        self.logger: logging.Logger = logging.getLogger(f"Dispatcher-{orchestration_id}")
 
-    async def run_pipeline(self):
+    async def run_pipeline(self) -> None:
         """
         Main execution loop for all steps in the orchestration.
         """
-        with Session(self.engine) as session:
+        with Session(self.engine) as session: Session:
             # 1. Fetch orchestration with workflow
-            orchestration = session.get(Orchestration, self.orchestration_id)
+            orchestration: Orchestration | None = session.get(Orchestration, self.orchestration_id)
             if not orchestration or not orchestration.workflow:
                 self.logger.error(f"Cannot dispatch: Orchestration or Workflow not found.")
                 return
 
-            workflow_steps = orchestration.workflow.steps
+            workflow_steps: List[Dict[str, Any]] = orchestration.workflow.steps
             self.logger.info(f"Starting execution for {len(workflow_steps)} steps")
 
-            for step_data in workflow_steps:
-                success = await self._process_single_step(session, orchestration, step_data)
+            for step_data: Dict[str, Any] in workflow_steps:
+                success: bool = await self._process_single_step(session, orchestration, step_data)
                 
                 if not success:
                     self.logger.error(f"Pipeline halted due to step failure.")
@@ -56,10 +56,10 @@ class Dispatcher:
         Handles the lifecycle of a single step: status tracking, retries, and snapshots.
         Returns True if successful, False otherwise.
         """
-        step_id = step_data.get("step_id")
+        step_id: Any | None = step_data.get("step_id")
 
         # 0. Idempotency Check: Skip if already successful
-        existing_status = session.exec(
+        existing_status: StepStatus | None = session.exec(
             select(StepStatus)
             .where(StepStatus.orchestration_id == self.orchestration_id)
             .where(StepStatus.step_id == step_id)
@@ -95,7 +95,7 @@ class Dispatcher:
             max_tries=MAX_RETRIES,
             logger=self.logger
         )
-        async def _attempt_dispatch():
+        async def _attempt_dispatch() -> Dict[str, Any]:
             return await self._dispatch_step(step_data)
 
         try:
@@ -103,7 +103,7 @@ class Dispatcher:
             session.add(status_record)
             session.commit()
 
-            result_data = await _attempt_dispatch()
+            result_data: Dict[str, Any] = await _attempt_dispatch()
             
             if result_data["status"] == "SUCCESS":
                 status_record.status = "SUCCESS"
@@ -118,7 +118,7 @@ class Dispatcher:
                 session.add(status_record)
                 session.commit()
 
-        except Exception as e:
+        except Exception as e: Exception:
             last_error = str(e)
             self.logger.error(f"Step {step_id} execution CRASHED: {e}")
             status_record.status = "FAILED"
@@ -145,7 +145,7 @@ class Dispatcher:
         """
         Routes the step to a registered driver.
         """
-        step_type = step_data.get("type")
+        step_type: Any | None = step_data.get("type")
         driver = self.registry.get_driver(step_type)
         
         try:
@@ -157,7 +157,7 @@ class Dispatcher:
                 response["result"] = driver.sanitize(response["result"])
             
             return response
-        except Exception as e:
+        except Exception as e: Exception:
             return {
                 "status": "FAILED",
                 "is_recoverable": True, # Assume transient if the driver crashes mysteriously

@@ -15,11 +15,11 @@ class GmailDriver(BaseDriver):
     Requires OPSAI_DRIVER_GMAIL_USER and OPSAI_DRIVER_GMAIL_PASS.
     """
     
-    def __init__(self):
+    def __init__(self) -> None:
         self.smtp_server = "smtp.gmail.com"
         self.port = 465 # For SSL
-        self.username = os.getenv("OPSAI_DRIVER_GMAIL_USER")
-        self.password = os.getenv("OPSAI_DRIVER_GMAIL_PASS")
+        self.username: str | None = os.getenv("OPSAI_DRIVER_GMAIL_USER")
+        self.password: str | None = os.getenv("OPSAI_DRIVER_GMAIL_PASS")
 
     def check_health(self) -> bool:
         """
@@ -29,8 +29,8 @@ class GmailDriver(BaseDriver):
             return False
             
         try:
-            context = ssl.create_default_context()
-            with smtplib.SMTP_SSL(self.smtp_server, self.port, context=context) as server:
+            context: ssl.SSLContext = ssl.create_default_context()
+            with smtplib.SMTP_SSL(self.smtp_server, self.port, context=context) as server: smtplib.SMTP_SSL:
                 server.login(self.username, self.password)
             return True
         except Exception:
@@ -86,7 +86,7 @@ class GmailDriver(BaseDriver):
 
         except smtplib.SMTPAuthenticationError:
             return {"status": "FAILED", "is_recoverable": False, "error": "Invalid Gmail Credentials"}
-        except Exception as e:
+        except Exception as e: Exception:
             return {"status": "FAILED", "is_recoverable": True, "error": str(e)}
 
     def sanitize(self, data: Dict[str, Any]) -> Dict[str, Any]:
@@ -95,7 +95,7 @@ class GmailDriver(BaseDriver):
         """
         if "to" in data:
             # Hash the email for consistency in audit logs without leaking PII
-            email_hash = hashlib.sha256(data["to"].encode()).hexdigest()[:12]
+            email_hash: str = hashlib.sha256(data["to"].encode()).hexdigest()[:12]
             data["to"] = f"REDACTED_{email_hash}@domain.com"
         
         return data

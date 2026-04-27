@@ -29,5 +29,5 @@ class RetryHandler:
         """
         Sleep for the calculated delay (for real execution, not used in tests).
         """
-        delay = self.get_delay(retry_policy, retry_count)
+        delay: float = self.get_delay(retry_policy, retry_count)
         time.sleep(delay)

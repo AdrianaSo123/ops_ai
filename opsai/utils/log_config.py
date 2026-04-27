@@ -2,10 +2,11 @@ import logging
 import os
 import sys
 import json
+from typing import Any, TextIO
 
 class JsonFormatter(logging.Formatter):
-    def format(self, record):
-        log_record = {
+    def format(self, record) -> str:
+        log_record: dict[str, str] = {
             'timestamp': self.formatTime(record, self.datefmt),
             'level': record.levelname,
             'logger': record.name,
@@ -19,12 +20,12 @@ class JsonFormatter(logging.Formatter):
             log_record['exc_info'] = self.formatException(record.exc_info)
         return json.dumps(log_record)
 
-def configure_logging():
-    log_level = os.getenv('OPSAI_LOG_LEVEL', 'INFO').upper()
-    log_format = os.getenv('OPSAI_LOG_FORMAT', 'json')
-    root_logger = logging.getLogger()
+def configure_logging() -> None:
+    log_level: str = os.getenv('OPSAI_LOG_LEVEL', 'INFO').upper()
+    log_format: str = os.getenv('OPSAI_LOG_FORMAT', 'json')
+    root_logger: logging.Logger = logging.getLogger()
     root_logger.handlers.clear()
-    handler = logging.StreamHandler(sys.stdout)
+    handler: logging.StreamHandler[TextIO | Any] = logging.StreamHandler(sys.stdout)
     if log_format == 'json':
         formatter = JsonFormatter()
     else:
