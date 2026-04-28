@@ -86,7 +86,7 @@ class GmailDriver(BaseDriver):
 
         except smtplib.SMTPAuthenticationError:
             return {"status": "FAILED", "is_recoverable": False, "error": "Invalid Gmail Credentials"}
-        except Exception as e: Exception:
+        except Exception as e:
             return {"status": "FAILED", "is_recoverable": True, "error": str(e)}
 
     def sanitize(self, data: Dict[str, Any]) -> Dict[str, Any]:

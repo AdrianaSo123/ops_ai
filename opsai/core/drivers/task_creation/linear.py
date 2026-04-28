@@ -86,7 +86,7 @@ class LinearDriver(BaseDriver):
             "teamId": self._cached_team_id
         }
 
-        async with httpx.AsyncClient() as client: httpx.AsyncClient:
+        async with httpx.AsyncClient() as client:
             try:
                 response: httpx.Response = await client.post(
                     self.api_url,

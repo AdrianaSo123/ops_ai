@@ -118,7 +118,7 @@ class Dispatcher:
                 session.add(status_record)
                 session.commit()
 
-        except Exception as e: Exception:
+        except Exception as e:
             last_error = str(e)
             self.logger.error(f"Step {step_id} execution CRASHED: {e}")
             status_record.status = "FAILED"
