@@ -64,12 +64,12 @@ class Orchestrator:
 
             # SHADOW VALIDATION (New in Phase 4: Prompt Injection Protection)
             # Hardcoded safety rules that cannot be bypassed by AI prompt engineering
-            ALLOWED_DOMAINS: list[str] = ["opsai.com", "enterprise.corp", "gmail.com"] # In prod, this would be a config
-            for p: Dict[str, Any] in payloads:
+            ALLOWED_DOMAINS = ["opsai.com", "enterprise.corp", "gmail.com"] # In prod, this would be a config
+            for p in payloads:
                 if p.get("step_id") and "COMMUNICATION" in p["step_id"]:
                     to_email = p.get("payload", {}).get("to", "")
-                    if to_email and not any(to_email.endswith(d) for d: str in ALLOWED_DOMAINS):
-                        msg: str = f"SHADOW VETO: Blocked communication to unauthorized domain: {to_email}"
+                    if to_email and not any(to_email.endswith(d) for d in ALLOWED_DOMAINS):
+                        msg = f"SHADOW VETO: Blocked communication to unauthorized domain: {to_email}"
                         self.logger.error("SECURITY", msg)
                         yield {"stage": "EXECUTING", "status": "FAILED", "reason": "Security Violation: Unauthorized Domain"}
                         return
@@ -78,12 +78,12 @@ class Orchestrator:
 
             # MERGE PAYLOADS INTO WORKFLOW (New in Phase 3 Fix)
             # This ensures the WorkflowInstance in the DB contains everything needed for dispatching.
-            payload_map: Dict[Any, Any] = {p["step_id"]: p["payload"] for p: Dict[str, Any] in payloads}
-            for step: Dict[str, Any] in workflow:
+            payload_map = {p["step_id"]: p["payload"] for p in payloads}
+            for step in workflow:
                 step["payload"] = payload_map.get(step["step_id"], {})
 
             # Persist the HYDRATED WorkflowInstance for Governance/Approval
-            with Session(self.engine) as session: Session:
+            with Session(self.engine) as session:
                 orch: Orchestration | None = session.get(Orchestration, self.orchestration_id)
                 if orch:
                     # Clear any old abstract workflow and save the hydrated one
@@ -100,7 +100,7 @@ class Orchestrator:
             self.logger.info("GOVERNANCE", "Halting for approval")
             
             # Transition status in DB to PENDING_APPROVAL
-            with Session(self.engine) as session: Session:
+            with Session(self.engine) as session:
                 orch: Orchestration | None = session.get(Orchestration, self.orchestration_id)
                 if orch:
                     orch.status = OrchestrationStatus.PENDING_APPROVAL
@@ -113,7 +113,7 @@ class Orchestrator:
             # The pipeline effectively ends here for the initial run. 
             # Phase 2 Dispatcher will pick up from EXECUTING after approve() is called.
 
-        except Exception as e: Exception:
+        except Exception as e:
             yield {"stage": "PIPELINE", "status": "FAILED", "reason": str(e)}
         finally:
             self.context_mgr.close()
