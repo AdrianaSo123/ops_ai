@@ -50,7 +50,7 @@ class ValidationService:
         """
         # Minimum requirement: each payload has step_id and payload content
         try:
-            for item: Dict[str, Any] in data:
+            for item in data:
                 if "step_id" not in item or "payload" not in item:
                     return False
             return True

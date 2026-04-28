@@ -60,6 +60,6 @@ class ExecutionService:
             
             result = json.loads(response.choices[0].message.content)
             return result.get("payloads", [])
-        except Exception as e: Exception:
+        except Exception as e:
             # Fallback for execution failure
             return []

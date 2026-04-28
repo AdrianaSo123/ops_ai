@@ -71,7 +71,7 @@ class PlanningService:
             
             result = json.loads(response.choices[0].message.content)
             return result.get("workflow", [])
-        except Exception as e: Exception:
+        except Exception as e:
             # Fallback strategy
             return [{
                 "step_id": "fallback_manual_review",

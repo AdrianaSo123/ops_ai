@@ -28,7 +28,7 @@ class Dispatcher:
         """
         Main execution loop for all steps in the orchestration.
         """
-        with Session(self.engine) as session: Session:
+        with Session(self.engine) as session:
             # 1. Fetch orchestration with workflow
             orchestration: Orchestration | None = session.get(Orchestration, self.orchestration_id)
             if not orchestration or not orchestration.workflow:
@@ -38,7 +38,7 @@ class Dispatcher:
             workflow_steps: List[Dict[str, Any]] = orchestration.workflow.steps
             self.logger.info(f"Starting execution for {len(workflow_steps)} steps")
 
-            for step_data: Dict[str, Any] in workflow_steps:
+            for step_data in workflow_steps:
                 success: bool = await self._process_single_step(session, orchestration, step_data)
                 
                 if not success:

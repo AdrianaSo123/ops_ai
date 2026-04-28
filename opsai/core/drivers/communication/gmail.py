@@ -30,7 +30,7 @@ class GmailDriver(BaseDriver):
             
         try:
             context: ssl.SSLContext = ssl.create_default_context()
-            with smtplib.SMTP_SSL(self.smtp_server, self.port, context=context) as server: smtplib.SMTP_SSL:
+            with smtplib.SMTP_SSL(self.smtp_server, self.port, context=context) as server:
                 server.login(self.username, self.password)
             return True
         except Exception:

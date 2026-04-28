@@ -33,7 +33,7 @@ class LinearDriver(BaseDriver):
         """ % self.team_key
         
         try:
-            with httpx.Client() as client: httpx.Client:
+            with httpx.Client() as client:
                 response: httpx.Response = client.post(
                     self.api_url,
                     headers={"Authorization": self.api_key, "Content-Type": "application/json"},
