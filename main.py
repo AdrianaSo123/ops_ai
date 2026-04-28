@@ -27,7 +27,7 @@ async def custom_http_exception_handler(request: Request, exc: HTTPException):
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     return error_response("ValidationError", str(exc), status_code=422)
-from sqlmodel import Session
+from sqlmodel import Session, select
 from dotenv import load_dotenv
 from opsai.utils.log_config import configure_logging
 import json
