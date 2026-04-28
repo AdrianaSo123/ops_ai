@@ -16,7 +16,7 @@ from fastapi.exception_handlers import http_exception_handler
 from fastapi.exceptions import RequestValidationError
 from fastapi.exception_handlers import request_validation_exception_handler
 
-app = FastAPI(title="OpsAI - System of Record", lifespan=lifespan)
+app = FastAPI(title="OpsAI - System of Record")
 
 @app.exception_handler(HTTPException)
 async def custom_http_exception_handler(request: Request, exc: HTTPException):
