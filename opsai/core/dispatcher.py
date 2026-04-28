@@ -157,7 +157,7 @@ class Dispatcher:
                 response["result"] = driver.sanitize(response["result"])
             
             return response
-        except Exception as e: Exception:
+        except Exception as e:
             return {
                 "status": "FAILED",
                 "is_recoverable": True, # Assume transient if the driver crashes mysteriously

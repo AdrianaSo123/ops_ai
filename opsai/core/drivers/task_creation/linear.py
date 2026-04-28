@@ -127,7 +127,7 @@ class LinearDriver(BaseDriver):
                 else:
                     return {"status": "FAILED", "is_recoverable": False, "error": "Linear issue creation failed"}
 
-            except httpx.RequestError as e: httpx.RequestError:
+            except httpx.RequestError as e:
                 return {"status": "FAILED", "is_recoverable": True, "error": f"Network Error: {str(e)}"}
 
     def sanitize(self, data: Dict[str, Any]) -> Dict[str, Any]:
