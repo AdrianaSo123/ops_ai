@@ -1,3 +1,4 @@
+print("=== OpsAI app is starting ===")
 from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks, Request
 from fastapi.responses import StreamingResponse, JSONResponse
 def error_response(type_: str, message: str, status_code: int = 400):
