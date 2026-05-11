@@ -8,8 +8,13 @@ def test_context_snapshotting():
     create_db_and_tables()
     
     with Session(engine) as session:
-        # 1. Create Orchestration
-        orchestration = Orchestration(raw_input="Test input")
+        # 1. Create Orchestration with required fields
+        orchestration = Orchestration(
+            raw_input="Test input",
+            organization_id=uuid.uuid4(),
+            user_id=uuid.uuid4(),
+            status=OrchestrationStatus.PENDING
+        )
         session.add(orchestration)
         session.commit()
         session.refresh(orchestration)

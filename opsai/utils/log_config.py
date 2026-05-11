@@ -4,9 +4,12 @@ import sys
 import json
 from typing import Any, TextIO
 
+
+from .logging import redact_pii
+
 class JsonFormatter(logging.Formatter):
     def format(self, record) -> str:
-        log_record: dict[str, str] = {
+        log_record: dict[str, Any] = {
             'timestamp': self.formatTime(record, self.datefmt),
             'level': record.levelname,
             'logger': record.name,
@@ -16,6 +19,12 @@ class JsonFormatter(logging.Formatter):
             log_record['orchestration_id'] = record.orchestration_id
         if hasattr(record, 'stage'):
             log_record['stage'] = record.stage
+        if hasattr(record, 'trace_id'):
+            log_record['trace_id'] = record.trace_id
+        if hasattr(record, 'extra'):
+            log_record['extra'] = redact_pii(record.extra)
+        if hasattr(record, 'error'):
+            log_record['error'] = record.error
         if record.exc_info:
             log_record['exc_info'] = self.formatException(record.exc_info)
         return json.dumps(log_record)

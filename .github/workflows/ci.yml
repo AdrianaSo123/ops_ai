@@ -27,6 +27,9 @@ jobs:
       - name: Run tests with coverage
         run: |
           pytest --cov=opsai --cov-report=xml --cov-report=term-missing
+      - name: Fail if coverage below threshold
+        run: |
+          coverage report --fail-under=85
       - name: Upload coverage to Coveralls
         uses: coverallsapp/github-action@v2
         with:

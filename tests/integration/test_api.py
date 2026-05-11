@@ -36,13 +36,16 @@ async def test_full_orchestration_lifecycle(client: TestClient, session):
         orch_id = data["id"]
         assert data["status"] == "PENDING"
 
-        # B. Manually progress the state to PENDING_APPROVAL
-        # We do this manually in the test to avoid the complexity of streaming
-        # Convert orch_id back to UUID object for SQLModel session.get
+
+        # B. Simulate workflow progression via API (fetch orchestration, patch status, create workflow instance)
         orch_id_uuid = uuid.UUID(orch_id)
+        # Fetch orchestration detail (simulate polling)
+        detail_response = client.get(f"/api/orchestrations/{orch_id}")
+        assert detail_response.status_code == 200
+        # Patch orchestration status to PENDING_APPROVAL via direct API or service if available
+        # If not, fallback to DB manipulation as before (for now, as no PATCH endpoint exists)
         orchestration = session.get(opsai.models.Orchestration, orch_id_uuid)
         orchestration.status = OrchestrationStatus.PENDING_APPROVAL
-        # Create a mock workflow instance so the approve endpoint passes the staleness check
         wf = opsai.models.WorkflowInstance(orchestration_id=orch_id_uuid, steps=mock_workflow)
         session.add(orchestration)
         session.add(wf)

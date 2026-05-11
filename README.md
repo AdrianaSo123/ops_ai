@@ -3,12 +3,15 @@
 [![Build Status](https://github.com/your-org/opsai/actions/workflows/ci.yml/badge.svg)](https://github.com/your-org/opsai/actions)
 [![Coverage Status](https://coveralls.io/repos/github/your-org/opsai/badge.svg?branch=main)](https://coveralls.io/github/your-org/opsai?branch=main)
 
+
 See [docs/README_EXTRAS.md](docs/README_EXTRAS.md) for:
 - Architecture diagram
 - API usage examples
 - OpenAPI docs
 - Error response format
 - Test coverage instructions
+
+See [docs/CONFIGURATION.md](docs/CONFIGURATION.md) for a full list of environment variables, toggles, and secrets.
 
 OpsAI is a robust, AI-first workflow engine that transforms ambiguous natural language inputs into planned, approved, and **real-world executed** operations. 
 
@@ -134,6 +137,41 @@ All AI-generated content was reviewed, revised, and integrated with professional
 - Clear, professional documentation
 
 This project was built to close skill gaps in orchestration, governance, and resilient API design, directly supporting my target role in AI/backend engineering.
+
+---
+
+## 🧩 Portfolio Site Integration
+Use this checklist to integrate OpsAI cleanly into a personal portfolio site.
+
+### 1) Make the project “demo-ready”
+- **Live demo URL**: Deploy the FastAPI service (Render, Railway, Fly.io, or a VPS).
+- **Public docs**: Export the OpenAPI docs to a static page and link it.
+- **Security note**: Keep live drivers disabled in demo mode (`OPSAI_DRIVER_*_ENABLED=false`).
+- **Seed scenario**: Provide a copy-paste example input and expected output.
+
+### 2) Create assets for the portfolio page
+- **Short demo video** (30–60s): show `/api/orchestrate` → approval → execution.
+- **Architecture diagram**: link to `docs/README_EXTRAS.md` or embed an image.
+- **Screenshots**: response JSON and reasoning stream UI (if you build a simple UI).
+
+### 3) Add a “Project Card” on your portfolio
+Recommended fields:
+- **Title**: OpsAI — Governed Enterprise Orchestration
+- **One-liner**: Human-in-the-loop AI workflow engine for real-world ops.
+- **Stack**: FastAPI, SQLModel, SQLite, OpenAI, Backoff
+- **Links**: GitHub repo, Live demo, Docs
+- **Highlight**: Governance gate + driver architecture
+
+### 4) Embed a quick-start code snippet
+Include a minimal curl example so the portfolio visitor can test quickly:
+```bash
+curl -X POST https://<your-demo-host>/api/orchestrate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "intent": "Onboard a new customer and send a welcome email",
+    "context": {"customer_name": "Acme Corp"}
+  }'
+```
 
 ---
 

@@ -5,30 +5,37 @@ Follows SOLID principles and is fully type-annotated and documented.
 """
 from typing import Dict, Any, List
 
+from typing import Dict, Any, List, Callable
+
 class EscalationHandler:
     """
     Handles escalation actions for workflow steps. Actions are injected for testability.
     """
-    def __init__(self, actions: Dict[str, Any]) -> None:
+    actions: Dict[str, Callable[[Dict[str, Any]], str]]
+
+    def __init__(self, actions: Dict[str, Callable[[Dict[str, Any]], str]]) -> None:
         """
+        Initialize the EscalationHandler.
         Args:
-            actions (dict): Mapping of action type to callable.
+            actions (Dict[str, Callable]): Mapping of action type to callable.
         """
-        self.actions: Dict[str, Any] = actions
+        self.actions = actions
 
     def escalate(self, escalation: Dict[str, Any], context: Dict[str, Any]) -> List[str]:
         """
         Execute escalation actions. Returns list of results.
+
         Args:
-            escalation (dict): Escalation definition with actions.
-            context (dict): Context for action execution.
+            escalation (Dict[str, Any]): Escalation definition with actions.
+            context (Dict[str, Any]): Context for action execution.
+
         Returns:
             List[str]: Results of escalation actions.
         """
-        results = []
+        results: List[str] = []
         for action in escalation.get("actions", []):
             action_type = action["type"]
-            handler: Any | None = self.actions.get(action_type)
+            handler = self.actions.get(action_type)
             if handler:
                 results.append(handler(context))
             else:

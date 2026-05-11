@@ -117,6 +117,8 @@ button:focus, [tabindex="0"]:focus, [tabindex="-1"]:focus, .MuiButton-root:focus
   min-height: 100vh;
   background: linear-gradient(120deg, #f5f6fa 0%, #e0e7ff 100%);
   transition: background 0.3s;
+  padding-top: 32px;
+  padding-bottom: 32px;
 }
 
 .app-shell .MuiAppBar-root {
@@ -126,21 +128,23 @@ button:focus, [tabindex="0"]:focus, [tabindex="-1"]:focus, .MuiButton-root:focus
 .hero-card {
   border-radius: 16px;
   border: 1px solid rgba(15, 23, 42, 0.1);
-  padding: 28px 24px;
+  padding: 36px 32px;
   background: #ffffffcc;
   box-shadow: 0 4px 32px 0 rgba(31,58,138,0.08);
   font-size: 1.12rem;
   transition: box-shadow 0.2s, background 0.2s;
+  margin-bottom: 24px;
 }
 
 .sidebar-card {
   border-radius: 16px;
   border: 1px solid rgba(15, 23, 42, 0.1);
-  padding: 24px 20px;
+  padding: 32px 24px;
   background: #ffffffcc;
   box-shadow: 0 2px 16px 0 rgba(31,58,138,0.06);
   font-size: 1.02rem;
   transition: box-shadow 0.2s, background 0.2s;
+  margin-bottom: 24px;
 }
 
 .nav-button {
@@ -160,12 +164,13 @@ button:focus, [tabindex="0"]:focus, [tabindex="-1"]:focus, .MuiButton-root:focus
 .section-card {
   border-radius: 16px;
   border: 1px solid rgba(15, 23, 42, 0.08);
-  padding: 24px 20px;
+  padding: 32px 28px;
   background: #fff;
   box-shadow: 0 2px 16px 0 rgba(31,58,138,0.04);
   height: 100%;
   font-size: 1.02rem;
   transition: box-shadow 0.2s, background 0.2s;
+  margin-bottom: 24px;
 }
 .section-card:hover {
   box-shadow: 0 6px 32px 0 rgba(31,58,138,0.10);
@@ -195,6 +200,7 @@ button:focus, [tabindex="0"]:focus, [tabindex="-1"]:focus, .MuiButton-root:focus
   box-shadow: 0 1px 8px 0 rgba(31,58,138,0.04);
   font-size: 1.02rem;
   transition: box-shadow 0.2s, background 0.2s;
+  margin-bottom: 24px;
 }
 
 .summary-item {
@@ -217,6 +223,7 @@ button:focus, [tabindex="0"]:focus, [tabindex="-1"]:focus, .MuiButton-root:focus
   box-shadow: 0 1px 8px 0 rgba(31,58,138,0.04);
   font-size: 0.98rem;
   transition: box-shadow 0.2s, background 0.2s;
+  margin-bottom: 16px;
 }
 .event-card:hover {
   box-shadow: 0 4px 16px 0 rgba(31,58,138,0.10);
@@ -227,10 +234,11 @@ button:focus, [tabindex="0"]:focus, [tabindex="-1"]:focus, .MuiButton-root:focus
 .step-card {
   border-radius: 14px;
   border: 1px solid rgba(15, 23, 42, 0.08);
-  padding: 18px 14px;
+  padding: 24px 18px;
   box-shadow: 0 1px 8px 0 rgba(31,58,138,0.04);
   font-size: 0.98rem;
   transition: box-shadow 0.2s, background 0.2s;
+  margin-bottom: 16px;
 }
 .step-card:hover {
   box-shadow: 0 4px 16px 0 rgba(31,58,138,0.10);

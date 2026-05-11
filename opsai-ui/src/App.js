@@ -23,7 +23,10 @@ import {
   TextField,
   Toolbar,
   Typography,
-  Link
+  Link,
+  Tabs,
+  Tab,
+  Tooltip
 } from '@mui/material';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
@@ -182,6 +185,7 @@ function App() {
   const canApprove = status === 'PENDING_APPROVAL';
   const canReject = status === 'PENDING_APPROVAL';
   const [showFullLog, setShowFullLog] = useState(false);
+  const [mainTab, setMainTab] = useState(0);
   const [streamEnabled, setStreamEnabled] = useState(true);
 
   const statusTone = (value) => {
@@ -405,11 +409,11 @@ function App() {
             </Box>
             <Box sx={{ flexGrow: 1 }} />
             <Stack direction="row" spacing={1} alignItems="center">
-              <Chip label={`Stream: ${streamState}`} color={streamTone(streamState)} />
-              <Chip label="Demo" />
+              <Chip label={`Stream: ${streamState}`} color={streamTone(streamState)} sx={{ display: { xs: 'none', md: 'inline-flex' } }} />
+              <Chip label="Demo" sx={{ display: { xs: 'none', md: 'inline-flex' } }} />
               <Button color="inherit" size="small" variant="text">Docs</Button>
               <Button color="inherit" size="small" variant="text">Status</Button>
-              <Button color="inherit" size="small" variant="outlined">Sign out</Button>
+              {/* Removed Sign out button as it has no functionality */}
               <Button
                 color="secondary"
                 size="small"
@@ -517,9 +521,15 @@ function App() {
 
                 {error && <Alert severity="error">{error}</Alert>}
 
+                <Tabs value={mainTab} onChange={(_, v) => setMainTab(v)} sx={{ mb: 2 }}>
+                  <Tab label="Pipeline Timeline" />
+                  <Tab label="Live Reasoning Stream" />
+                  <Tab label="Workflow & Step History" />
+                </Tabs>
                 <Grid container spacing={3}>
-                  <Grid item xs={12} lg={5}>
-                    <Paper elevation={0} className="section-card section-card--tall">
+                  <Grid item xs={12}>
+                    {mainTab === 0 && (
+                      <Paper elevation={0} className="section-card section-card--tall">
                   <Stack spacing={2}>
                     <Box className="section-header">
                       <Typography variant="subtitle1">New Orchestration</Typography>
@@ -578,7 +588,9 @@ function App() {
                 <Paper elevation={0} className="section-card section-card--medium">
                   <Stack spacing={2}>
                     <Box className="section-header">
-                      <Typography variant="h6">Governance Gate</Typography>
+                      <Tooltip title="The Governance Gate is where you approve or reject plans before execution." arrow>
+                        <Typography variant="h6" sx={{ display: 'inline-flex', alignItems: 'center' }}>Governance Gate</Typography>
+                      </Tooltip>
                       <Typography variant="body2" color="text.secondary">
                         Approve or reject once the plan reaches the PENDING_APPROVAL stage.
                       </Typography>
@@ -623,182 +635,153 @@ function App() {
                   </Stack>
                 </Paper>
 
-                <Paper elevation={0} className="section-card section-card--compact">
-                  <Stack spacing={1.5}>
-                    <Typography variant="h6">Governance Help</Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Approvals apply the generated workflow exactly as shown. Review the
-                      workflow steps and confirm any missing recipient or scheduling data
-                      before approving.
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      If you need to re-run, update the intent or reset the session to
-                      generate a new workflow.
-                    </Typography>
-                  </Stack>
-                </Paper>
-              </Grid>
-
-              <Grid item xs={12} lg={7}>
-                <Paper elevation={0} className="section-card section-card--compact">
-                  <Stack spacing={2}>
-                    <Typography variant="h6">Pipeline Timeline</Typography>
-                    <TableContainer component={Paper} variant="outlined" sx={{ overflowX: 'auto' }}>
-                      <Table size="small">
-                        <TableHead>
-                          <TableRow>
-                            <TableCell>Stage</TableCell>
-                            <TableCell>Status</TableCell>
-                            <TableCell>Last Updated</TableCell>
-                          </TableRow>
-                        </TableHead>
-                        <TableBody>
-                          {stageTimeline.map((item) => (
-                            <TableRow key={item.stage}>
-                              <TableCell>{item.stage}</TableCell>
-                              <TableCell>
-                                <Chip size="small" label={item.status} color={statusTone(item.status)} />
-                              </TableCell>
-                              <TableCell>{item.timestamp || '-'}</TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </TableContainer>
-                  </Stack>
-                </Paper>
-
-                <Paper elevation={0} className="section-card section-card--medium">
-                  <Stack spacing={2}>
-                    <Box display="flex" alignItems="center" justifyContent="space-between">
-                      <Typography variant="h6">Live Reasoning Stream</Typography>
-                      <Stack direction="row" spacing={1} alignItems="center">
-                        <Chip label={`Stream: ${streamState}`} color={streamTone(streamState)} />
-                        <Button size="small" variant="text" onClick={handleStopStream} disabled={!streamEnabled}>
-                          Stop
-                        </Button>
-                        <Button size="small" variant="text" onClick={handleResumeStream} disabled={streamEnabled || !orchestrationId}>
-                          Resume
-                        </Button>
-                      </Stack>
-                    </Box>
-                    <Divider />
-                    {events.length === 0 ? (
-                      <Typography variant="body2" color="text.secondary" sx={{ my: 2 }}>
-                        Start an orchestration to see stage updates here.<br />
-                        <Link href="/docs/getting-started" target="_blank" rel="noopener">Learn how to run your first orchestration.</Link>
-                      </Typography>
-                    ) : (
-                      <Stack spacing={2}>
-                        <Stack spacing={1}>
-                          {latestByStage.map((item, index) => (
-                            <Paper key={`${item.stage || 'event'}-${index}`} variant="outlined" className="event-card">
-                              <Stack spacing={0.5} sx={{ p: 1.5 }}>
-                                <Stack direction="row" spacing={1} alignItems="center">
-                                  <Chip size="small" label={item.stage || 'EVENT'} />
-                                  <Chip size="small" label={item.status || 'UNKNOWN'} color={statusTone(item.status)} />
-                                  <Typography variant="caption" color="text.secondary">
-                                    {item.received_at}
-                                  </Typography>
-                                </Stack>
-                                <pre className="event-payload">{formatJson(item)}</pre>
-                              </Stack>
-                            </Paper>
-                          ))}
-                        </Stack>
-                        <Button variant="text" onClick={() => setShowFullLog((prev) => !prev)}>
-                          {showFullLog ? 'Hide full stream' : 'Show full stream'}
-                        </Button>
-                        {showFullLog && (
-                          <Stack spacing={1} className="event-log">
-                            {events.map((item, index) => (
-                              <Paper key={`${item.stage || 'event'}-${index}`} variant="outlined" className="event-card">
-                                <Stack spacing={0.5} sx={{ p: 1.5 }}>
-                                  <Stack direction="row" spacing={1} alignItems="center">
-                                    <Chip size="small" label={item.stage || 'EVENT'} />
-                                    <Chip size="small" label={item.status || 'UNKNOWN'} color={statusTone(item.status)} />
-                                    <Typography variant="caption" color="text.secondary">
-                                      {item.received_at}
-                                    </Typography>
-                                  </Stack>
-                                  <pre className="event-payload">{formatJson(item)}</pre>
-                                </Stack>
-                              </Paper>
-                            ))}
-                          </Stack>
-                        )}
-                      </Stack>
                     )}
-                  </Stack>
-                </Paper>
-
-                <Paper elevation={0} className="section-card section-card--tall">
-                  <Stack spacing={2}>
-                    <Typography variant="h6">Workflow & Step History</Typography>
-                    {detailLoading && !detail ? (
-                      <CircularProgress />
-                    ) : detail ? (
-                      <>
-                        <Typography variant="subtitle2">Workflow Steps</Typography>
-                        <Grid container spacing={2}>
-                          {detail.workflow?.steps?.map((step, idx) => (
-                            <Grid item xs={12} md={6} key={`${step.step_id}-${idx}`}>
-                              <Paper variant="outlined" className="step-card">
+                    {mainTab === 1 && (
+                      <Paper elevation={0} className="section-card section-card--medium">
+                        <Stack spacing={2}>
+                          <Box display="flex" alignItems="center" justifyContent="space-between">
+                            <Typography variant="h6">Live Reasoning Stream</Typography>
+                            <Button size="small" variant="outlined" onClick={() => setShowFullLog((prev) => !prev)}>
+                              {showFullLog ? 'Hide Stream' : 'Show Stream'}
+                            </Button>
+                          </Box>
+                          <Divider />
+                          {showFullLog && (
+                            events.length === 0 ? (
+                              <Typography variant="body2" color="text.secondary" sx={{ my: 2 }}>
+                                Start an orchestration to see stage updates here.<br />
+                                <Link href="/docs/getting-started" target="_blank" rel="noopener">Learn how to run your first orchestration.</Link>
+                              </Typography>
+                            ) : (
+                              <Stack spacing={2}>
                                 <Stack spacing={1}>
-                                  <Stack direction="row" spacing={1} alignItems="center">
-                                    <Typography variant="subtitle2">{step.step_id}</Typography>
-                                    <Chip size="small" label={step.type} />
-                                    <Chip size="small" label={step.priority} color="info" />
-                                  </Stack>
-                                  <Typography variant="body2">{step.action}</Typography>
-                                  <Typography variant="caption" color="text.secondary">
-                                    Owner: {step.owner}
-                                  </Typography>
-                                  {step.payload && (
-                                    <pre className="event-payload">{formatJson(step.payload)}</pre>
-                                  )}
+                                  {latestByStage.map((item, index) => (
+                                    <Paper key={`${item.stage || 'event'}-${index}`} variant="outlined" className="event-card">
+                                      <Stack spacing={0.5} sx={{ p: 1.5 }}>
+                                        <Stack direction="row" spacing={1} alignItems="center">
+                                          <Chip size="small" label={item.stage || 'EVENT'} />
+                                          <Chip size="small" label={item.status || 'UNKNOWN'} color={statusTone(item.status)} />
+                                          <Typography variant="caption" color="text.secondary">
+                                            {item.received_at}
+                                          </Typography>
+                                        </Stack>
+                                        <pre className="event-payload">{formatJson(item)}</pre>
+                                      </Stack>
+                                    </Paper>
+                                  ))}
                                 </Stack>
-                              </Paper>
-                            </Grid>
-                          ))}
-                        </Grid>
-                        <TableContainer component={Paper} variant="outlined" sx={{ overflowX: 'auto' }}>
-                          <Table size="small">
-                            <TableHead>
-                              <TableRow>
-                                <TableCell>Step ID</TableCell>
-                                <TableCell>Type</TableCell>
-                                <TableCell>Action</TableCell>
-                                <TableCell>Owner</TableCell>
-                                <TableCell>Priority</TableCell>
-                              </TableRow>
-                            </TableHead>
-                            <TableBody>
-                              {detail.workflow?.steps?.map((step, idx) => (
-                                <TableRow key={`${step.step_id}-${idx}`}>
-                                  <TableCell>{step.step_id}</TableCell>
-                                  <TableCell>{step.type}</TableCell>
-                                  <TableCell>{step.action}</TableCell>
-                                  <TableCell>{step.owner}</TableCell>
-                                  <TableCell>{step.priority}</TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        </TableContainer>
-
-                        <Typography variant="subtitle2">Step History</Typography>
-                        <TableContainer component={Paper} variant="outlined" sx={{ overflowX: 'auto' }}>
-                          <Table size="small">
-                            <TableHead>
-                              <TableRow>
-                                <TableCell>Step ID</TableCell>
-                                <TableCell>Status</TableCell>
-                                <TableCell>Result / Error</TableCell>
-                              </TableRow>
-                            </TableHead>
-                            <TableBody>
-                              {detail.steps?.map((step, idx) => (
+                                <Button variant="text" onClick={() => setShowFullLog((prev) => !prev)}>
+                                  {showFullLog ? 'Hide full stream' : 'Show full stream'}
+                                </Button>
+                                {showFullLog && (
+                                  <Stack spacing={1} className="event-log">
+                                    {events.map((item, index) => (
+                                      <Paper key={`${item.stage || 'event'}-${index}`} variant="outlined" className="event-card">
+                                        <Stack spacing={0.5} sx={{ p: 1.5 }}>
+                                          <Stack direction="row" spacing={1} alignItems="center">
+                                            <Chip size="small" label={item.stage || 'EVENT'} />
+                                            <Chip size="small" label={item.status || 'UNKNOWN'} color={statusTone(item.status)} />
+                                            <Typography variant="caption" color="text.secondary">
+                                              {item.received_at}
+                                            </Typography>
+                                          </Stack>
+                                          <pre className="event-payload">{formatJson(item)}</pre>
+                                        </Stack>
+                                      </Paper>
+                                    ))}
+                                  </Stack>
+                                )}
+                              </Stack>
+                            )
+                          )}
+                        </Stack>
+                      </Paper>
+                    )}
+                    {mainTab === 2 && (
+                      <Paper elevation={0} className="section-card section-card--tall">
+                        <Stack spacing={2}>
+                          <Typography variant="h6">Workflow & Step History</Typography>
+                          {detailLoading && !detail ? (
+                            <CircularProgress />
+                          ) : detail ? (
+                            <>
+                              <Typography variant="subtitle2">Workflow Steps</Typography>
+                              <Grid container spacing={2}>
+                                {detail.workflow?.steps?.map((step, idx) => (
+                                  <Grid item xs={12} md={6} key={`${step.step_id}-${idx}`}>
+                                    <Paper variant="outlined" className="step-card">
+                                      <Stack spacing={1}>
+                                        <Stack direction="row" spacing={1} alignItems="center">
+                                          <Typography variant="subtitle2">{step.step_id}</Typography>
+                                          <Chip size="small" label={step.type} />
+                                          <Chip size="small" label={step.priority} color="info" />
+                                        </Stack>
+                                        <Typography variant="body2">{step.action}</Typography>
+                                        <Typography variant="caption" color="text.secondary">
+                                          Owner: {step.owner}
+                                        </Typography>
+                                        {step.payload && (
+                                          <pre className="event-payload">{formatJson(step.payload)}</pre>
+                                        )}
+                                      </Stack>
+                                    </Paper>
+                                  </Grid>
+                                ))}
+                              </Grid>
+                              <TableContainer component={Paper} variant="outlined" sx={{ overflowX: 'auto' }}>
+                                <Table size="small">
+                                  <TableHead>
+                                    <TableRow>
+                                      <TableCell>Step ID</TableCell>
+                                      <TableCell>Type</TableCell>
+                                      <TableCell>Action</TableCell>
+                                      <TableCell>Owner</TableCell>
+                                      <TableCell>Priority</TableCell>
+                                    </TableRow>
+                                  </TableHead>
+                                  <TableBody>
+                                    {detail.workflow?.steps?.map((step, idx) => (
+                                      <TableRow key={`${step.step_id}-${idx}`}>
+                                        <TableCell>{step.step_id}</TableCell>
+                                        <TableCell>{step.type}</TableCell>
+                                        <TableCell>{step.action}</TableCell>
+                                        <TableCell>{step.owner}</TableCell>
+                                        <TableCell>{step.priority}</TableCell>
+                                      </TableRow>
+                                    ))}
+                                  </TableBody>
+                                </Table>
+                              </TableContainer>
+                              <Typography variant="subtitle2">Step History</Typography>
+                              <TableContainer component={Paper} variant="outlined" sx={{ overflowX: 'auto' }}>
+                                <Table size="small">
+                                  <TableHead>
+                                    <TableRow>
+                                      <TableCell>Step ID</TableCell>
+                                      <TableCell>Status</TableCell>
+                                      <TableCell>Result / Error</TableCell>
+                                    </TableRow>
+                                  </TableHead>
+                                  <TableBody>
+                                    {detail.steps?.map((step, idx) => (
+                                      <TableRow key={`${step.step_id}-${idx}`}>
+                                        <TableCell>{step.step_id}</TableCell>
+                                        <TableCell>{step.status}</TableCell>
+                                        <TableCell>{formatJson(step.result || step.error || '-')}</TableCell>
+                                      </TableRow>
+                                    ))}
+                                  </TableBody>
+                                </Table>
+                              </TableContainer>
+                            </>
+                          ) : (
+                            <Typography variant="body2" color="text.secondary">
+                              No workflow details yet. Run an orchestration and refresh after planning.
+                            </Typography>
+                          )}
+                        </Stack>
+                      </Paper>
+                    )}
                                 <TableRow key={`${step.step_id}-${idx}`}>
                                   <TableCell>{step.step_id}</TableCell>
                                   <TableCell>{step.status}</TableCell>

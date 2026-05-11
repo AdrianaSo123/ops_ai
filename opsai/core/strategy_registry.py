@@ -37,15 +37,35 @@ Include account creation, hardware ordering (Laptop/Monitor), and a security bri
 )
 
 class StrategyRegistry:
+    """
+    Registry for domain-specific workflow strategies.
+    """
+    _strategies: Dict[str, DomainStrategy]
+
     def __init__(self) -> None:
-        self._strategies: Dict[str, DomainStrategy] = {
+        """
+        Initialize the strategy registry with supported domain strategies.
+        """
+        self._strategies = {
             "CLIENT_ONBOARDING": ONBOARDING_STRATEGY,
             "SALES_OUTREACH": SALES_STRATEGY,
             "IT_PROVISIONING": IT_STRATEGY
         }
 
     def get_strategy(self, intent: str) -> Optional[DomainStrategy]:
+        """
+        Retrieve the strategy for a given intent.
+        Args:
+            intent (str): The workflow intent.
+        Returns:
+            Optional[DomainStrategy]: The matching strategy or None.
+        """
         return self._strategies.get(intent)
 
     def get_all_intents(self) -> List[str]:
+        """
+        Get all supported workflow intents.
+        Returns:
+            List[str]: List of supported intent keys.
+        """
         return list(self._strategies.keys())

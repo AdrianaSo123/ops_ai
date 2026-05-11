@@ -44,6 +44,8 @@ class GmailDriver(BaseDriver):
         to_email = payload.get("to")
         subject = payload.get("subject", "OpsAI Notification")
         raw_body = payload.get("body", "")
+        allow_missing_to = os.getenv("OPSAI_ALLOW_MISSING_TO", "false").lower() == "true"
+        demo_email = os.getenv("OPSAI_DEMO_EMAIL") or self.username
         
         # JINJA2 TEMPLATING (New in Phase 3)
         try:
@@ -53,6 +55,11 @@ class GmailDriver(BaseDriver):
         except Exception:
             # Fallback to raw body if template fails
             body = raw_body
+
+        if not to_email and allow_missing_to and demo_email:
+            to_email = demo_email
+            subject = f"[DEMO] {subject}"
+            raw_body = f"[DEMO MODE] Missing recipient email. Using demo inbox.\n\n{raw_body}"
 
         if not to_email:
             return {

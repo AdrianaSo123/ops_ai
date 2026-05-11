@@ -8,7 +8,7 @@ from .context import ContextManager
 from ..utils.logging import ContextLogger
 from ..models import OrchestrationStatus, Orchestration, WorkflowInstance
 from ..database import engine
-from sqlmodel import Session
+from sqlmodel import Session, select
 import logging
 
 class Orchestrator:
@@ -86,10 +86,22 @@ class Orchestrator:
             with Session(self.engine) as session:
                 orch: Orchestration | None = session.get(Orchestration, self.orchestration_id)
                 if orch:
-                    # Clear any old abstract workflow and save the hydrated one
-                    wf_instance = WorkflowInstance(orchestration_id=self.orchestration_id, steps=workflow)
-                    session.add(wf_instance)
-                    orch.status = OrchestrationStatus.PLANNING # Maintain state
+                    existing = session.exec(
+                        select(WorkflowInstance).where(
+                            WorkflowInstance.orchestration_id == self.orchestration_id
+                        )
+                    ).first()
+                    if existing:
+                        existing.steps = workflow
+                        existing.version += 1
+                        session.add(existing)
+                    else:
+                        wf_instance = WorkflowInstance(
+                            orchestration_id=self.orchestration_id,
+                            steps=workflow
+                        )
+                        session.add(wf_instance)
+                    orch.status = OrchestrationStatus.PLANNING  # Maintain state
                     session.add(orch)
                     session.commit()
 

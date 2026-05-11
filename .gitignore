@@ -1,3 +1,5 @@
+# Ignore environment variable files
+.env
 # Environment
 .env
 .env.local

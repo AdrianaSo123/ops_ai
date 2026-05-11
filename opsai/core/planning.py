@@ -39,9 +39,12 @@ Always return valid JSON. Do not include markdown formatting.
 
 class PlanningService:
     def __init__(self) -> None:
+        import logging
+        logger = logging.getLogger("opsai")
         self.api_key: str | None = os.getenv("OPENAI_API_KEY")
         if not self.api_key:
-            raise ValueError("OPENAI_API_KEY not found in .env")
+            logger.critical("OPENAI_API_KEY not found in .env")
+            raise RuntimeError("OPENAI_API_KEY not found in .env")
         self.client = AsyncOpenAI(api_key=self.api_key)
         self.registry = StrategyRegistry()
 

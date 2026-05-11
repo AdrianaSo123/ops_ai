@@ -1,6 +1,15 @@
-print("=== OpsAI app is starting ===")
+import logging
+logger = logging.getLogger("opsai")
+logger.info("=== OpsAI app is starting ===")
 from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks, Request
 from fastapi.responses import StreamingResponse, JSONResponse
+
+class APIException(Exception):
+    def __init__(self, type_: str, message: str, status_code: int = 400):
+        self.type_ = type_
+        self.message = message
+        self.status_code = status_code
+
 def error_response(type_: str, message: str, status_code: int = 400):
     return JSONResponse(
         status_code=status_code,
@@ -16,22 +25,14 @@ def error_response(type_: str, message: str, status_code: int = 400):
 from fastapi.exception_handlers import http_exception_handler
 from fastapi.exceptions import RequestValidationError
 from fastapi.exception_handlers import request_validation_exception_handler
-
-app = FastAPI(title="OpsAI - System of Record")
-
-@app.exception_handler(HTTPException)
-async def custom_http_exception_handler(request: Request, exc: HTTPException):
-    detail = exc.detail if isinstance(exc.detail, str) else str(exc.detail)
-    return error_response("HTTPException", detail, status_code=exc.status_code)
-
-@app.exception_handler(RequestValidationError)
-async def validation_exception_handler(request: Request, exc: RequestValidationError):
-    return error_response("ValidationError", str(exc), status_code=422)
+import uuid
+from pydantic import BaseModel
 from sqlmodel import Session, select
 from dotenv import load_dotenv
 from opsai.utils.log_config import configure_logging
 import json
 import asyncio
+import os
 
 load_dotenv()
 configure_logging()
@@ -39,6 +40,36 @@ from contextlib import asynccontextmanager
 from opsai.database import create_db_and_tables, get_session, engine
 from opsai.models import Orchestration, OrchestrationStatus, StepStatus, WorkflowInstance
 from fastapi.encoders import jsonable_encoder
+from opsai.core.orchestrator import Orchestrator
+from opsai.core.dispatcher import Dispatcher
+from opsai.core.validation import ValidationService
+from opsai.core.drivers.registry import driver_startup_check, registry
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup logic: Initialize DB and Check Driver Health
+    create_db_and_tables()
+    if os.getenv("OPSAI_SKIP_DRIVER_CHECKS", "false").lower() != "true":
+        driver_startup_check()
+    yield
+    # Shutdown logic (optional)
+
+app = FastAPI(title="OpsAI - System of Record", lifespan=lifespan)
+
+
+@app.exception_handler(HTTPException)
+async def custom_http_exception_handler(request: Request, exc: HTTPException):
+    detail = exc.detail if isinstance(exc.detail, str) else str(exc.detail)
+    return error_response("HTTPException", detail, status_code=exc.status_code)
+
+@app.exception_handler(APIException)
+async def api_exception_handler(request: Request, exc: APIException):
+    return error_response(exc.type_, exc.message, status_code=exc.status_code)
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    return error_response("ValidationError", str(exc), status_code=422)
+
 # --- Orchestration List Endpoint ---
 @app.get("/api/orchestrations")
 async def list_orchestrations(session: Session = Depends(get_session)):
@@ -47,10 +78,10 @@ async def list_orchestrations(session: Session = Depends(get_session)):
 
 # --- Orchestration Detail & Step History Endpoint ---
 @app.get("/api/orchestrations/{orchestration_id}")
-async def orchestration_detail(orchestration_id: str, session: Session = Depends(get_session)):
+async def orchestration_detail(orchestration_id: uuid.UUID, session: Session = Depends(get_session)):
     orchestration = session.get(Orchestration, orchestration_id)
     if not orchestration:
-        return error_response("NotFound", "Orchestration not found", status_code=404)
+        raise APIException("NotFound", "Orchestration not found", status_code=404)
     # Get workflow instance and step history
     workflow = session.exec(select(WorkflowInstance).where(WorkflowInstance.orchestration_id == orchestration_id)).first()
     steps = session.exec(select(StepStatus).where(StepStatus.orchestration_id == orchestration_id)).all()
@@ -59,37 +90,25 @@ async def orchestration_detail(orchestration_id: str, session: Session = Depends
         "workflow": jsonable_encoder(workflow),
         "steps": jsonable_encoder(steps)
     }
-from opsai.core.orchestrator import Orchestrator
-from opsai.core.dispatcher import Dispatcher
-from opsai.core.validation import ValidationService
-from opsai.core.drivers.registry import driver_startup_check, registry
-import uuid
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Startup logic: Initialize DB and Check Driver Health
-    create_db_and_tables()
-    driver_startup_check()
-    yield
-    # Shutdown logic (optional)
-
-app = FastAPI(title="OpsAI - System of Record", lifespan=lifespan)
 
 @app.get("/health")
 def health_check():
     return {"status": "calm", "system": "OpsAI"}
 
+class OrchestrationCreate(BaseModel):
+    input_text: str
+    organization_id: uuid.UUID
+    user_id: uuid.UUID
+
 @app.post("/api/orchestrate", response_model=Orchestration)
 async def create_orchestration(
-    input_text: str, 
-    organization_id: uuid.UUID,
-    user_id: uuid.UUID,
+    payload: OrchestrationCreate,
     session: Session = Depends(get_session)
 ):
     orchestration = Orchestration(
-        raw_input=input_text, 
-        organization_id=organization_id,
-        user_id=user_id,
+        raw_input=payload.input_text,
+        organization_id=payload.organization_id,
+        user_id=payload.user_id,
         status=OrchestrationStatus.PENDING
     )
     session.add(orchestration)
@@ -105,10 +124,10 @@ async def approve_orchestration(
 ):
     orchestration = session.get(Orchestration, orchestration_id)
     if not orchestration:
-        return error_response("NotFound", "Orchestration not found", status_code=404)
+        raise APIException("NotFound", "Orchestration not found", status_code=404)
     
     if orchestration.status != OrchestrationStatus.PENDING_APPROVAL:
-        return error_response("InvalidState", f"Cannot approve orchestration in state {orchestration.status}", status_code=400)
+        raise APIException("InvalidState", f"Cannot approve orchestration in state {orchestration.status}", status_code=400)
 
     # 1. Staleness Check (Re-run Validation)
     validator = ValidationService()
@@ -116,7 +135,15 @@ async def approve_orchestration(
         orchestration.status = OrchestrationStatus.FAILED
         session.add(orchestration)
         session.commit()
-        return error_response("StalenessCheckFailed", "Workflow is no longer valid.", status_code=422)
+        raise APIException("StalenessCheckFailed", "Workflow is no longer valid.", status_code=422)
+
+    payload_issues = validator.workflow_payload_issues(orchestration.workflow.steps)
+    if payload_issues:
+        raise APIException(
+            "PayloadValidationFailed",
+            " ".join(payload_issues),
+            status_code=422
+        )
 
     # 2. Update Status
     orchestration.status = OrchestrationStatus.EXECUTING
@@ -158,13 +185,20 @@ async def stream_orchestration(
 
     async def event_generator():
         try:
+            if orchestration.status != OrchestrationStatus.PENDING:
+                stage = "GOVERNANCE" if orchestration.status == OrchestrationStatus.PENDING_APPROVAL else "PIPELINE"
+                update = {"stage": stage, "status": orchestration.status}
+                if orchestration.status == OrchestrationStatus.PENDING_APPROVAL:
+                    update["orchestration_id"] = str(orchestration_id)
+                yield f"data: {json.dumps(update)}\n\n"
+                return
             orchestrator = Orchestrator(orchestration_id, engine)
             async for update in orchestrator.run(orchestration.raw_input):
                 yield f"data: {json.dumps(update)}\n\n"
                 await asyncio.sleep(0.1)
         except Exception as e:
             # This will show up in your server terminal
-            print(f"CRITICAL STREAM ERROR: {e}")
+            logger.error(f"CRITICAL STREAM ERROR: {e}")
             yield f"data: {json.dumps({'stage': 'PIPELINE', 'status': 'FAILED', 'reason': str(e)})}\n\n"
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")

@@ -17,7 +17,7 @@ class BaseDriver(ABC):
     @abstractmethod
     def _get_required_env(self) -> Optional[str]:
         """Returns the ENV variable name required for this driver."""
-        pass
+        raise NotImplementedError("Subclasses must implement check_health()")
 
     @abstractmethod
     async def execute(self, payload: Dict[str, Any]) -> Dict[str, Any]:
@@ -25,7 +25,7 @@ class BaseDriver(ABC):
         Executes the integration call. 
         If API key is missing, triggers 'Dry Run' simulation.
         """
-        pass
+        raise NotImplementedError("Subclasses must implement execute()")
 
     def log_dry_run(self, payload: Dict[str, Any]):
         """Logs the structured payload for an integration audit."""

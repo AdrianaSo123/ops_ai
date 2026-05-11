@@ -11,9 +11,12 @@ load_dotenv()
 class InterpretationService:
     def __init__(self):
         # Defaulting to OpenAI as the primary engine for Intent Classification
+        import logging
+        logger = logging.getLogger("opsai")
         self.api_key = os.getenv("OPENAI_API_KEY")
         if not self.api_key:
-            raise ValueError("OPENAI_API_KEY not found in .env")
+            logger.critical("OPENAI_API_KEY not found in .env")
+            raise RuntimeError("OPENAI_API_KEY not found in .env")
         self.client = AsyncOpenAI(api_key=self.api_key)
 
     async def interpret(self, input_text: str) -> Dict[str, Any]:
